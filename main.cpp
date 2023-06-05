@@ -1,7 +1,7 @@
 #include <iostream>
 
 #include <hagame/core/hg.h>
-#include "src/game.h"
+#include "src/Pathfinding.h"
 
 // The main function simply initializes the game and starts running it
 
@@ -11,7 +11,7 @@
 #if HEADLESS
 Game game(GAME_NAME);
 #else
-Game game(GAME_NAME, GAME_SIZE);
+Pathfinding game(GAME_NAME, GAME_SIZE);
 #endif
 
 void emscripten_tick() {

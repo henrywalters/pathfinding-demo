@@ -5,8 +5,8 @@
 #ifndef HGAMETEMPLATE_CONSTANTS_H
 #define HGAMETEMPLATE_CONSTANTS_H
 
-#define GAME_NAME "GAME TEMPLATE"
-#define GAME_SIZE hg::graphics::SD
+#define GAME_NAME "Pathfinding Demo"
+#define GAME_SIZE hg::graphics::HD
 
 #define HEADLESS 0 // If true, no window will be opened
 #define USE_IMGUI 1 // If true, IMGUI will be enabled and taken care of in game.cpp
