@@ -16,6 +16,42 @@
 
 const hg::Vec2 TILE_SIZE(25, 25);
 
+const float MAX_WEIGHT = 100.0f;
+
+enum class ModeType {
+    Wall,
+    Obstacle,
+    Start,
+    Goal
+};
+
+struct Mode {
+    ModeType type;
+    std::string name;
+};
+
+#define MODE(mode) Mode{ModeType::##mode, #mode}
+
+const std::vector<Mode> MODES {
+    Mode{ModeType::Wall, "Wall"},
+    Mode{ModeType::Obstacle, "Obstacle"},
+    Mode{ModeType::Start, "Start"},
+    Mode{ModeType::Goal, "Goal"},
+};
+
+struct Tile {
+
+    Tile(hg::Vec2i _pos, ModeType _type, float _weight):
+            pos(_pos),
+            type(_type),
+            weight(_weight)
+    {}
+
+    hg::Vec2i pos;
+    ModeType type;
+    float weight = 1.0;
+};
+
 class Pathfinding : public hg::Game {
 public:
 
@@ -41,36 +77,6 @@ protected:
 private:
 
 #if !HEADLESS
-
-    enum class ModeType {
-        Obstacle,
-        Start,
-        Goal
-    };
-
-    struct Mode {
-        ModeType type;
-        std::string name;
-    };
-
-    struct Tile {
-
-        Tile(hg::Vec2i _pos, ModeType _type, float _weight):
-            pos(_pos),
-            type(_type),
-            weight(_weight)
-        {}
-
-        hg::Vec2i pos;
-        ModeType type;
-        float weight = 1.0;
-    };
-
-    const std::vector<Mode> MODES {
-        Mode{ModeType::Obstacle, "Obstacle"},
-        Mode{ModeType::Start, "Start"},
-        Mode{ModeType::Goal, "Goal"},
-    };
 
     void renderTile(Tile tile);
 
@@ -102,7 +108,7 @@ private:
     std::unique_ptr<hg::graphics::primitives::Line> m_line;
     std::unique_ptr<hg::graphics::MeshInstance> m_pathMesh;
 
-    std::unique_ptr<hg::utils::PathFinding<std::vector<Tile>>> m_pathfinding;
+    std::unique_ptr<hg::utils::PathFinding> m_pathfinding;
 
     std::unique_ptr<Tile> m_start;
     std::unique_ptr<Tile> m_end;

@@ -38,7 +38,27 @@ void Pathfinding::onInit() {
     m_camera.centered = true;
     m_camera.size = m_size;
 
-    m_pathfinding = std::make_unique<hg::utils::PathFinding<std::vector<Tile>>>(&m_tiles);
+    m_pathfinding = std::make_unique<hg::utils::PathFinding>([&](hg::utils::PathFinding::Node node) {
+        std::vector<hg::utils::PathFinding::Node> neighbors;
+        for (const auto& rawNeighbor : m_tiles.getNeighbors(node.position)) {
+            hg::utils::PathFinding::Node neighbor;
+            neighbor.position = rawNeighbor.index;
+
+            if (rawNeighbor.value.size() == 0) {
+
+                neighbor.cost = 0;
+            } else {
+
+                if (rawNeighbor.value[0].type == ModeType::Wall) {
+                    continue;
+                }
+                neighbor.cost = rawNeighbor.value[0].weight;
+            }
+
+            neighbors.push_back(neighbor);
+        }
+        return neighbors;
+    });
 
     hg::loadShaders({
         "shaders/color",
@@ -112,12 +132,6 @@ void Pathfinding::onAfterUpdate() {
         m_mesh->render();
     }
 
-    if (m_pathfinding->finished() && m_pathfinding->m_foundPath) {
-        colorShader->setVec4("color", Color::red());
-        colorShader->setMat4("model", Mat4::Identity());
-        m_pathMesh->render();
-    }
-
     auto rawMousePos = m_window->input.keyboardMouse.mouse.position;
     rawMousePos[1] = m_window->size()[1] - rawMousePos[1];
     m_rawMousePos = m_camera.getGamePos(rawMousePos);
@@ -126,6 +140,12 @@ void Pathfinding::onAfterUpdate() {
     m_tiles.forEach([&](Vec2i pos, Tile tile) {
         renderTile(tile);
     });
+
+    if (m_pathfinding->finished() && m_pathfinding->m_foundPath) {
+        colorShader->setVec4("color", Color::red());
+        colorShader->setMat4("model", Mat4::Identity());
+        m_pathMesh->render();
+    }
 
     if (m_start != nullptr) {
         renderTile(*m_start);
@@ -163,7 +183,7 @@ void Pathfinding::onUpdate(double dt) {
 
     if (!m_guiActive) {
         if (m_window->input.keyboardMouse.mouse.left) {
-            if (m_mode == ModeType::Obstacle) {
+            if (m_mode == ModeType::Obstacle || m_mode == ModeType::Wall) {
                 if (m_tiles.get(m_mousePos).value.size() == 0) {
                     m_tiles.insert(m_mousePos, Tile(m_mousePos, m_mode, m_weight));
                 }
@@ -184,7 +204,7 @@ void Pathfinding::onUpdate(double dt) {
 
     ImGui::Text(("DT: " + std::to_string(dt)).c_str());
     ImGui::Text(("Mouse Pos: " + (std::string) m_mousePos).c_str());
-    ImGui::DragFloat("Weight", &m_weight, 0.1f, 0.0, 1.0f);
+    ImGui::DragFloat("Weight", &m_weight, 0.1f, 0.0, MAX_WEIGHT);
     ImGui::DragInt("Ticks Per Second", &m_ticksPerSecond, 1, 1, 1000);
 
     for (const auto& mode : MODES) {
@@ -240,14 +260,18 @@ void Pathfinding::onUpdate(double dt) {
     ImGui::End();
 }
 
-void Pathfinding::renderTile(Pathfinding::Tile tile) {
+void Pathfinding::renderTile(Tile tile) {
 
     ShaderProgram* shader;
 
-    if (tile.type == ModeType::Obstacle) {
+    if (tile.type == ModeType::Wall) {
         shader = getShader("color");
         shader->use();
-        shader->setVec4("color", Color(tile.weight, tile.weight, tile.weight, 1.0f));
+        shader->setVec4("color", Color::white());
+    } else if (tile.type == ModeType::Obstacle) {
+        shader = getShader("color");
+        shader->use();
+        shader->setVec4("color", Color(tile.weight / MAX_WEIGHT, tile.weight / MAX_WEIGHT, tile.weight / MAX_WEIGHT, 1.0f));
     } else if (tile.type == ModeType::Goal) {
         shader = getShader("sprite");
         shader->use();
